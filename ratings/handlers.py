@@ -204,7 +204,7 @@ class RatingHandler(object):
         else:
             vote = None
         if vote is not None:
-            kwargs['initial'] = {'score': vote.score}
+            kwargs['initial'] = {'score': int(vote.score)}
         return kwargs
         
     # voting
