@@ -65,7 +65,7 @@ class VoteForm(forms.Form):
         else:
             field = forms.FloatField if int(decimals) else forms.IntegerField
         widget = self.get_score_widget(score_range, score_step, can_delete_vote)
-        return field(widget=widget, label=u'')
+        return field(widget=widget, label=u'', required=False, initial=0)
 
     def get_score_widget(self, score_range, score_step, can_delete_vote):
         """
@@ -329,9 +329,9 @@ class StarVoteForm(VoteForm):
 
 
 class StarVoteCommentForm(StarVoteForm):
-    name = forms.CharField(label="Name", max_length=50)
+    name = forms.CharField(label="Name", max_length=50, required=False)
     comment = forms.CharField(label="Comment", widget=forms.Textarea,
-                              max_length=settings.COMMENT_MAX_LENGTH)
+                              max_length=settings.COMMENT_MAX_LENGTH, required=False)
 
     def clean_score(self):
         """
