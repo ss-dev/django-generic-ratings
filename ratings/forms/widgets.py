@@ -164,8 +164,9 @@ class StarWidget(BaseWidget):
 
     def _get_value(self, original, split):
         if original:
-            value = round(original * split) / split
-            return Decimal(str(value))
+            # value = round(original * split) / split
+            # return Decimal(str(value))
+            return int(original)
 
     def render(self, name, value, attrs=None):
         context = self.get_context(name, value, attrs or {})
