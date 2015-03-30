@@ -160,7 +160,7 @@ class Comment(models.Model):
     @property
     def name(self):
         if self.user_id:
-            return self.user.get_username()
+            return self.user.get_full_name() or self.user.get_username()
         return self.user_name
 
     def by_anonymous(self):
