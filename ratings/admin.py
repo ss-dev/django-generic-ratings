@@ -21,3 +21,14 @@ class VoteAdmin(admin.ModelAdmin):
     readonly_fields = ('user',)
 
 admin.site.register(models.Vote, VoteAdmin)
+
+
+class CommentAdmin(admin.ModelAdmin):
+    list_display = ('content_object', 'key', 'user', 'comment',
+        'created_at')
+    list_filter = ('content_type', 'created_at')
+    ordering = ('-created_at',)
+    search_fields = ('user', 'key')
+    readonly_fields = ('user',)
+
+admin.site.register(models.Comment, CommentAdmin)
