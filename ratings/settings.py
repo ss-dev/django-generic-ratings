@@ -32,3 +32,6 @@ COOKIE_NAME_PATTERN = getattr(settings, 'GENERIC_RATINGS_COOKIE_NAME_PATTERN',
 # the cookie max age (number of seconds) for anonymous votes
 COOKIE_MAX_AGE = getattr(settings, 'GENERIC_RATINGS_COOKIE_MAX_AGE', 
     60 * 60 * 24 * 365) # one year
+
+# maximum length for comments
+COMMENT_MAX_LENGTH = getattr(settings, 'GENERIC_COMMENT_MAX_LENGTH', 3000)

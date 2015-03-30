@@ -5,7 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils.crypto import salted_hmac, constant_time_compare
 from django.utils.encoding import force_unicode
 
-from ratings import cookies, exceptions
+from ratings import cookies, exceptions, settings
 
 from widgets import SliderWidget, StarWidget
 
@@ -326,3 +326,101 @@ class StarVoteForm(VoteForm):
     def get_score_widget(self, score_range, score_step, can_delete_vote):
         return StarWidget(score_range[0], score_range[1], score_step,
             instance=self.target_object, can_delete_vote=can_delete_vote, key=self.key)
+
+
+class StarVoteCommentForm(StarVoteForm):
+    name = forms.CharField(label="Name", max_length=50)
+    comment = forms.CharField(label="Comment", widget=forms.Textarea,
+                              max_length=settings.COMMENT_MAX_LENGTH)
+
+    def clean_score(self):
+        """
+        If *score_range* was given to the form, then check if the
+        score is in range.
+        Again, if *score_step* was given, then check if the score is valid
+        for that step.
+        """
+        score = self.cleaned_data['score']
+        self._delete_vote = False
+        # a 0 score means the user want to delete his vote
+        if score == 0:
+            return score
+        # score range, if given we have to check score is in that range
+        if self.score_range:
+            if not (self.score_range[0] <= score <= self.score_range[1]):
+                raise forms.ValidationError('Score is not in range')
+        # check score steps
+        if self.score_step:
+            try:
+                _, decimals = str(self.score_step).split('.')
+            except ValueError:
+                decimal_places = 0
+            else:
+                decimal_places = len(decimals) if int(decimals) else 0
+            if not decimal_places and int(score) != score:
+                raise forms.ValidationError('Score is not in steps')
+            factor = 10 ** decimal_places
+            if int(score * factor) % int(self.score_step * factor):
+                raise forms.ValidationError('Score is not in steps')
+        return score
+
+    def clean(self):
+        cleaned_data = super(StarVoteCommentForm, self).clean()
+        if not cleaned_data.get('comment') and not cleaned_data.get('score'):
+            raise forms.ValidationError('Please, enter comment or set rating')
+        return cleaned_data
+
+    def get_comment_model(self):
+        """
+        Return the comment model used to rate an object.
+        """
+        from ratings import models
+        return models.Comment
+
+    def get_comment_data(self, request, allow_anonymous):
+        content_type = ContentType.objects.get_for_model(self.target_object)
+        ip_address = request.META.get('REMOTE_ADDR')
+        lookups = {
+            'content_type': content_type,
+            'object_id': self.target_object.pk,
+            'key': self.cleaned_data['key'],
+        }
+        data = lookups.copy()
+        data.update({
+            'comment': self.cleaned_data['comment'],
+            'ip_address': ip_address,
+        })
+        if allow_anonymous:
+            # votes are handled by cookies
+            if not ip_address:
+                raise exceptions.DataError('Invalid ip address')
+            cookie_name = cookies.get_name(self.target_object, self.key)
+            cookie_value = request.COOKIES.get(cookie_name)
+            if cookie_value:
+                # the user maybe voted this object (it has a cookie)
+                lookups.update({'cookie': cookie_value, 'user__isnull': True})
+                data['cookie'] = cookie_value
+            else:
+                lookups = None
+                data['cookie'] = cookies.get_value(ip_address)
+        elif request.user.is_authenticated():
+            # votes are handled by database (django users)
+            lookups.update({'user': request.user, 'cookie__isnull': True})
+            data['user'] = request.user
+        else:
+            # something went very wrong: if anonymous votes are not allowed
+            # and the user is not authenticated the view should have blocked
+            # the voting process
+            raise exceptions.DataError('Anonymous user cannot vote.')
+        data['user_name'] = self.cleaned_data.get('name', '')
+        if not data['user_name'] and request.user.is_authenticated():
+            data['user_name'] = request.user.get_full_name() or request.user.get_username()
+        return lookups, data
+
+    def get_comment(self, request, allow_anonymous):
+        if not self.is_valid():
+            raise ValueError('get_comment may only be called on valid forms')
+        # get vote model and data
+        model = self.get_comment_model()
+        lookups, data = self.get_comment_data(request, allow_anonymous)
+        return model(**data)

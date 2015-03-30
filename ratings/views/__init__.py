@@ -1,7 +1,7 @@
 from django.db.models import get_model
 from django import http
 
-from ratings import handlers, signals
+from ratings import handlers, signals, models
 
 def vote(request, extra_context=None, form_class=None, using=None):
     """
@@ -98,6 +98,11 @@ def vote(request, extra_context=None, form_class=None, using=None):
                 # note: one receiver is always called: *handler.post_vote*
                 signals.vote_was_saved.send(sender=vote.__class__, 
                     vote=vote, request=request, created=created)
+
+            if form.cleaned_data.get('comment'):
+                # getting unsaved comment
+                comment = form.get_comment(request, handler.allow_anonymous)
+                comment.save()
         
             # vote is saved or deleted: redirect
             return handler.success_response(request, vote, created, deleted)

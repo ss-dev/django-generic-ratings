@@ -7,6 +7,7 @@ from django.utils.datastructures import SortedDict
 from django.contrib.auth.models import User
 
 from ratings import managers
+from ratings import settings
 
 # MODELS
 
@@ -52,7 +53,7 @@ class Score(models.Model):
         If the optional argument *commit* is False then the object
         is not saved.
         """
-        data = self.get_votes().aggregate(total=models.Sum('score'), 
+        data = self.get_votes().aggregate(total=models.Sum('score'),
             num_votes=models.Count('id'))
         # total is None in MySQL if there are no votes
         self.total = data['total'] or 0
@@ -96,7 +97,7 @@ class Vote(models.Model):
     cookie = models.CharField(max_length=64, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
-    
+
     # manager
     objects = managers.RatingsManager()
     
@@ -129,6 +130,45 @@ class Vote(models.Model):
         """
         return not self.user_id
         
+
+class Comment(models.Model):
+    """
+    A single comment relating a content object.
+    """
+    content_type = models.ForeignKey(ContentType)
+    object_id = models.PositiveIntegerField()
+    content_object = generic.GenericForeignKey('content_type', 'object_id')
+
+    key = models.CharField(max_length=16)
+    comment = models.TextField(max_length=settings.COMMENT_MAX_LENGTH)
+
+    user = models.ForeignKey(User, blank=True, null=True, related_name='comments')
+    user_name = models.CharField(max_length=50, blank=True)
+
+    ip_address = models.IPAddressField(null=True)
+    cookie = models.CharField(max_length=64, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    modified_at = models.DateTimeField(auto_now=True)
+
+    # manager
+    objects = managers.RatingsManager()
+
+    def __unicode__(self):
+        return u'Comment #%d to %s by %s' % (self.id, self.content_object,
+            self.user or self.ip_address)
+
+    @property
+    def name(self):
+        if self.user_id:
+            return self.user.get_username()
+        return self.user_name
+
+    def by_anonymous(self):
+        """
+        Return True if this vote is given by an anonymous user.
+        """
+        return not self.user_id
+
 
 # UTILS
 

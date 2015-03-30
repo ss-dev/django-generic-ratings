@@ -469,6 +469,25 @@ class RatingHandler(object):
         return models.Vote.objects.filter_with_contents(user=user, 
             content_object=self.model, **kwargs)
 
+    def get_comments_for(self, instance, **kwargs):
+        """
+        Return all votes given to *instance* and filtered by any given *kwargs*.
+        All the content objects related to returned votes are evaluated
+        together with votes.
+        """
+        return models.Vote.objects.filter_with_contents(
+            content_object=instance, **kwargs)
+
+    def get_comments_by(self, user, **kwargs):
+        """
+        Return all votes assigned by *user* to model instances handled
+        by this handler, and filtered by any given *kwargs*.
+        All the content objects related to returned votes are evaluated
+        together with votes.
+        """
+        return models.Vote.objects.filter_with_contents(user=user,
+            content_object=self.model, **kwargs)
+
     def get_score(self, instance, key):
         """
         Return the score for the target object *instance* and the given *key*.
