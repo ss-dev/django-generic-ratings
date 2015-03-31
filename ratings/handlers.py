@@ -195,6 +195,7 @@ class RatingHandler(object):
             'score_range': self.score_range, 
             'score_step': self.score_step,
             'can_delete_vote': self.can_delete_vote,
+            'request': request,
         }
         # initial vote (if present)
         if self.allow_anonymous:
