@@ -150,6 +150,8 @@ class Comment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
 
+    vote = models.ForeignKey(Vote, blank=True, null=True, related_name='comments')
+
     # manager
     objects = managers.RatingsManager()
 
