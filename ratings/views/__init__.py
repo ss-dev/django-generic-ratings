@@ -102,7 +102,7 @@ def vote(request, extra_context=None, form_class=None, using=None):
             if form.cleaned_data.get('comment'):
                 # getting unsaved comment
                 comment = form.get_comment(request, handler.allow_anonymous)
-                comment.vote = vote
+                comment.vote_id = vote.id
                 comment.save()
         
             # vote is saved or deleted: redirect
