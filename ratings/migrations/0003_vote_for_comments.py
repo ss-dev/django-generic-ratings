@@ -8,7 +8,7 @@ class Migration(DataMigration):
 
     def forwards(self, orm):
         "Write your forwards methods here."
-        for comment in orm['ratings.Comment'].objects.filter(user_id__is_null=False):
+        for comment in orm['ratings.Comment'].objects.filter(user_id=None):
             vote = list(orm['ratings.Vote'].objects.filter(user_id=comment.user_id))
             if vote:
                 orm['ratings.Comment'].objects.filter(id=comment.id).update(vote_id=vote[0].id)

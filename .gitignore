@@ -1,6 +1,5 @@
 *.pyc
 .env/*
 .idea/*
-__init__.py
 manage.py
 settings.py
